@@ -1,7 +1,6 @@
 package cmpequal
 
 import (
-"fmt"
 	"go/ast"
 	"go/types"
 	"golang.org/x/tools/go/analysis"
@@ -27,7 +26,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return // not a function call
 		}
 
-fmt.Println(fn.FullName())
 		if fn.FullName() != "github.com/google/go-cmp/cmp.Equal" {     // should also check cmp.Diff, etc.
 			return // not a call to Equal
 		}
