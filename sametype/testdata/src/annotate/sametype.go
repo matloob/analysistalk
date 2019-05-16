@@ -1,0 +1,4 @@
+package annotate
+
+func SameType() {
+}
