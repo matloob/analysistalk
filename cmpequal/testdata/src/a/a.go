@@ -7,9 +7,12 @@ import (
  "github.com/google/go-cmp/cmp"
 )
 
+type X struct {
+}
+
 func TestSomething(t *testing.T) {
-	var x int = 0
-	var y int = 0
+	var x X
+	var y X
 	if ! cmp.Equal(x, &y) { // error or something
 		fmt.Println("but they're not equal!")
 	}
