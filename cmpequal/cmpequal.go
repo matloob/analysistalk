@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/types"
 
 	"golang.org/x/tools/go/analysis"
@@ -37,9 +38,17 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if !types.Identical(typ0, typ1) {
 			var fixes []analysis.SuggestedFix
 			if isPointerTo(typ0, typ1) {
+				pass.Reportf(call.Pos(), "arg0 is a pointer to arg1")
 				fixes = append(fixes, fixDereference(pass, call.Args[0]))
 			} else if isPointerTo(typ1, typ0) {
+				pass.Reportf(call.Pos(), "arg1 is a pointer to arg0")
 				fixes = append(fixes, fixDereference(pass, call.Args[1]))
+			} else {
+				pass.Reportf(call.Pos(), "isPointerTo(typ0, arg1): %v, isPointerTo(arg1, arg0): %v", isPointerTo(typ0, typ1), isPointerTo(typ1, typ0))
+				pass.Reportf(call.Pos(), "isPointer(typ0): %v, isPointer(typ1): %v", isPointer(typ0), isPointer(typ1))
+				if t, ok := typ1.(*types.Pointer); ok {
+					pass.Reportf(call.Pos(), ".elem: %s", t.Elem())
+				}
 			}
 			pass.Report(analysis.Diagnostic{
 				Pos: call.Pos(), End: call.End(),
@@ -57,15 +66,22 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 func isPointerTo(a, b types.Type) bool {
 	if ptr, ok := a.(*types.Pointer); ok {
-		return types.Identical(ptr.Underlying(), b)
+		return types.Identical(ptr.Elem(), b)
 	}
 	return false
+}
+
+func isPointer(a types.Type) bool {
+	_, ok := a.(*types.Pointer)
+	return ok
 }
 
 func fixDereference(pass *analysis.Pass, expr ast.Expr) analysis.SuggestedFix {
 	// dereference typ0
 	var buf bytes.Buffer
-	ast.Fprint(&buf, pass.Fset, ast.StarExpr{X: expr}, nil)
+	if err := format.Node(&buf, pass.Fset, &ast.StarExpr{X: expr}); err != nil {
+		buf.WriteString(err.Error())
+	}
 	fix := analysis.SuggestedFix{
 		Message:   "derefenence pointer",
 		TextEdits: []analysis.TextEdit{{expr.Pos(), expr.End(), buf.Bytes()}},

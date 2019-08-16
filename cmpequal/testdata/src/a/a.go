@@ -4,16 +4,20 @@ import (
 	"fmt"
 	"testing"
 
- "github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp"
 )
 
 type X struct {
 }
 
+func NewX() *X {
+	return &X{}
+}
+
 func TestSomething(t *testing.T) {
-	var x X
-	var y X
-	if ! cmp.Equal(x, &y) { // error or something
+	want := X{}
+	got := NewX()
+	if !cmp.Equal(got, want) { // error or something
 		fmt.Println("but they're not equal!")
 	}
 }
