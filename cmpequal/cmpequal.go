@@ -42,13 +42,23 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			} else if isPointerTo(typ1, typ0) {
 				fixes = fixDereference(pass, call.Args[1])
 			}
-			reportWithFixes(pass, call, fixes, "cmp.Equal's arguments must have the same type; is called with %v and %v", typ0, typ1)
+			reportWithFixes(pass, call, fixes, "cmp.Equal's arguments must have the same type; is called with %s and %s",typeName(typ0), typeName(typ1))
 		}
 	}
 	inspect.Preorder(
 		[]ast.Node{(*ast.CallExpr)(nil)},
 		inspectNode)
 	return nil, nil
+}
+
+func typeName(t types.Type) string {
+	switch t := t.(type) {
+	case *types.Named:
+		return t.Obj().Pkg().Name() + "." + t.Obj().Name()
+	case *types.Pointer:
+		return "*" + typeName(t.Elem())
+	}
+	return fmt.Sprint(t)
 }
 
 func reportWithFixes(pass *analysis.Pass, node ast.Node, fixes []analysis.SuggestedFix, format string, formatArgs ...interface{}) {
