@@ -38,30 +38,21 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if !types.Identical(typ0, typ1) {
 			var fixes []analysis.SuggestedFix
 			if isPointerTo(typ0, typ1) {
-				pass.Reportf(call.Pos(), "arg0 is a pointer to arg1")
-				fixes = append(fixes, fixDereference(pass, call.Args[0]))
+				fixes =  fixDereference(pass, call.Args[0])
 			} else if isPointerTo(typ1, typ0) {
-				pass.Reportf(call.Pos(), "arg1 is a pointer to arg0")
-				fixes = append(fixes, fixDereference(pass, call.Args[1]))
-			} else {
-				pass.Reportf(call.Pos(), "isPointerTo(typ0, arg1): %v, isPointerTo(arg1, arg0): %v", isPointerTo(typ0, typ1), isPointerTo(typ1, typ0))
-				pass.Reportf(call.Pos(), "isPointer(typ0): %v, isPointer(typ1): %v", isPointer(typ0), isPointer(typ1))
-				if t, ok := typ1.(*types.Pointer); ok {
-					pass.Reportf(call.Pos(), ".elem: %s", t.Elem())
-				}
+				fixes = fixDereference(pass, call.Args[1])
 			}
-			pass.Report(analysis.Diagnostic{
-				Pos: call.Pos(), End: call.End(),
-				Message: fmt.Sprintf("cmp.Equal's arguments must have the same type; "+
-					"is called with %v and %v", typ0, typ1),
-				SuggestedFixes: fixes,
-			})
+			reportWithFixes(pass, call, fixes, "cmp.Equal's arguments must have the same type; is called with %v and %v", typ0, typ1)
 		}
 	}
 	inspect.Preorder(
 		[]ast.Node{(*ast.CallExpr)(nil)},
 		inspectNode)
 	return nil, nil
+}
+
+func reportWithFixes(pass *analysis.Pass, node ast.Node, fixes []analysis.SuggestedFix, format string, formatArgs ...interface{}) {
+	pass.Report(analysis.Diagnostic{Pos: node.Pos(), End: node.End(), Message: fmt.Sprintf(format, formatArgs...), SuggestedFixes: fixes})
 }
 
 func isPointerTo(a, b types.Type) bool {
@@ -71,20 +62,13 @@ func isPointerTo(a, b types.Type) bool {
 	return false
 }
 
-func isPointer(a types.Type) bool {
-	_, ok := a.(*types.Pointer)
-	return ok
-}
-
-func fixDereference(pass *analysis.Pass, expr ast.Expr) analysis.SuggestedFix {
+func fixDereference(pass *analysis.Pass, expr ast.Expr) []analysis.SuggestedFix {
 	// dereference typ0
 	var buf bytes.Buffer
-	if err := format.Node(&buf, pass.Fset, &ast.StarExpr{X: expr}); err != nil {
-		buf.WriteString(err.Error())
-	}
+	format.Node(&buf, pass.Fset, &ast.StarExpr{X: expr})
 	fix := analysis.SuggestedFix{
-		Message:   "derefenence pointer",
+		Message:   "dereference pointer",
 		TextEdits: []analysis.TextEdit{{expr.Pos(), expr.End(), buf.Bytes()}},
 	}
-	return fix
+	return []analysis.SuggestedFix{fix}
 }
