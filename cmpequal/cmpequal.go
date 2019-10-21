@@ -38,11 +38,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if !types.Identical(typ0, typ1) {
 			var fixes []analysis.SuggestedFix
 			if isPointerTo(typ0, typ1) {
-				fixes =  fixDereference(pass, call.Args[0])
+				fixes = fixDereference(pass, call.Args[0])
 			} else if isPointerTo(typ1, typ0) {
 				fixes = fixDereference(pass, call.Args[1])
 			}
-			reportWithFixes(pass, call, fixes, "cmp.Equal's arguments must have the same type; is called with %s and %s",typeName(typ0), typeName(typ1))
+			reportWithFixes(pass, call, fixes, "\n    cmp.Equal's arguments must have the same type\n"+
+				"        but it's called with \u001b[31m%s\u001b[0m and \u001b[31m%s\u001b[0m values", typeName(typ0), typeName(typ1))
 		}
 	}
 	inspect.Preorder(

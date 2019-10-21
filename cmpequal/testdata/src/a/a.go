@@ -1,7 +1,7 @@
+// Package a is a good package.
 package a
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -17,7 +17,7 @@ func NewX() *X {
 func TestSomething(t *testing.T) {
 	want := X{}
 	got := NewX()
-	if !cmp.Equal(got, want) { // error or something
-		fmt.Println("but they're not equal!")
+	if !cmp.Equal(got, want) {
+		t.Error("but they're not equal!")
 	}
 }
